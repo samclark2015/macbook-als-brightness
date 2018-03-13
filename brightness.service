@@ -1,0 +1,8 @@
+[Unit]
+Description=Auto-Brightness
+
+[Service]
+ExecStart=/usr/local/bin/brightness.py
+
+[Install]
+WantedBy=default.target
