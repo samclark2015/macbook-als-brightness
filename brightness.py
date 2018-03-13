@@ -5,16 +5,22 @@ import re
 import time
 import math
 
+### Start Config
 poll_time=2
 poll_count=5
-factor_screen=3.0
-factor_keyb=1.0
+
+max_als=4095
+
+min_keyb = 0
+max_keyb = int(open('/sys/class/leds/smc::kbd_backlight/max_brightness').readline().strip())
+
+min_screen = 70
+max_screen = int(open('/sys/class/backlight/intel_backlight/max_brightness').readline().strip())
+
+### End Config
 
 avg_als=[]
 last_avg=0.0
-max_als=4095.0
-max_keyb = int(open('/sys/class/leds/smc::kbd_backlight/max_brightness').readline().strip())
-max_screen = int(open('/sys/class/backlight/intel_backlight/max_brightness').readline().strip())
 
 def get_keyb():
     f = open('/sys/class/leds/smc::kbd_backlight/brightness')
@@ -62,12 +68,13 @@ def translate(value, leftMin, leftMax, rightMin, rightMax):
 def handle_diff(val):
     screen_delta = val * max_screen
     screen_val = math.ceil(get_screen() + screen_delta)
-    #print("Old brightness {}; New brightness {}; delta {}".format(get_screen(), screen_val, screen_delta))
-    fade_screen(get_screen(), screen_val)
+    if keyb_val > min_screen:
+        fade_screen(get_screen(), screen_val)
 
     keyb_delta = val * max_keyb
     keyb_val = math.ceil(get_keyb() - keyb_delta)
-    fade_keyb(get_keyb(), keyb_val)
+    if keyb_val > min_keyb:
+        fade_keyb(get_keyb(), keyb_val)
 
 async def loop_fun(loop):
     global last_avg
