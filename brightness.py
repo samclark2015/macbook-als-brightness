@@ -68,12 +68,12 @@ def translate(value, leftMin, leftMax, rightMin, rightMax):
 def handle_diff(val):
     screen_delta = val * max_screen
     screen_val = math.ceil(get_screen() + screen_delta)
-    if keyb_val > min_screen:
+    if min_screen < screen_val < max_screen :
         fade_screen(get_screen(), screen_val)
 
     keyb_delta = val * max_keyb
     keyb_val = math.ceil(get_keyb() - keyb_delta)
-    if keyb_val > min_keyb:
+    if min_keyb < keyb_val < max_keyb:
         fade_keyb(get_keyb(), keyb_val)
 
 async def loop_fun(loop):
