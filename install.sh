@@ -10,3 +10,6 @@ chmod +x /usr/local/bin/brightness.py
 
 cp ./brightness.service /etc/systemd/system/brightness.service
 chmod +x /etc/systemd/system/brightness.service
+
+systemctl enable brightness
+systemctl start brightness
