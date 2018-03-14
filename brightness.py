@@ -7,7 +7,7 @@ import math
 
 ### Start Config
 poll_time=0.5 # Time between updates, in seconds
-poll_count=10 # Number of polls used to calculate average
+poll_count=5 # Number of polls used to calculate average
 
 max_als=4095
 
@@ -20,7 +20,7 @@ max_screen = int(open('/sys/class/backlight/intel_backlight/max_brightness').rea
 ### End Config
 
 avg_als=[]
-last_avg=0.0
+last_avg=-1.0
 
 def get_keyb():
     f = open('/sys/class/leds/smc::kbd_backlight/brightness')
@@ -43,16 +43,16 @@ def set_screen(val):
     f = open('/sys/class/backlight/intel_backlight/brightness', 'w')
     f.write(str(val))
 
-def fade_screen(old, new):
+async def fade_screen(old, new, interval):
     for i in range(old, new, 1 if old < new else -1):
         set_screen(i)
-        time.sleep(0.007)
+        await asyncio.sleep(interval/abs(old-new))
 
-def fade_keyb(old, new):
+async def fade_keyb(old, new, interval):
     #print(old, new)
     for i in range(old, new, 1 if old < new else -1):
         set_keyb(i)
-        time.sleep(0.007)
+        await asyncio.sleep(interval/abs(old-new))
 
 def translate(value, leftMin, leftMax, rightMin, rightMax):
     # Figure out how 'wide' each range is
@@ -65,16 +65,19 @@ def translate(value, leftMin, leftMax, rightMin, rightMax):
     # Convert the 0-1 range into a value in the right range.
     return rightMin + (valueScaled * rightSpan)
 
-def handle_diff(val):
+async def handle_diff(val):
+    tasks = []
     screen_delta = val * max_screen
     screen_val = math.ceil(get_screen() + screen_delta)
     if min_screen < screen_val < max_screen :
-        fade_screen(get_screen(), screen_val)
+        tasks.append(fade_screen(get_screen(), screen_val, poll_time))
 
     keyb_delta = val * max_keyb
     keyb_val = math.ceil(get_keyb() - keyb_delta)
     if min_keyb < keyb_val < max_keyb:
-        fade_keyb(get_keyb(), keyb_val)
+        tasks.append(fade_keyb(get_keyb(), keyb_val, poll_time))
+    if len(tasks) > 0:
+        await asyncio.wait(tasks)
 
 async def loop_fun(loop):
     global last_avg
@@ -85,13 +88,13 @@ async def loop_fun(loop):
             avg_als.pop(0)
         if len(avg_als) > 0:
             avg = sum(avg_als)/len(avg_als)
-            perc = (avg - last_avg) / max_als
-            #val = translate(avg, 0, max_als, 0, max_screen)
-            #print("Avg val: {}; Percent {}%".format(avg, perc * 100))
-            handle_diff(perc)
+            if last_avg != -1.0:
+                perc = (avg - last_avg) / max_als
+                if perc != 0.0:
+                    await handle_diff(perc)
+                else:
+                    await asyncio.sleep(poll_time)
             last_avg = avg
-
-        await asyncio.sleep(poll_time)
 
 loop = asyncio.get_event_loop()
 loop.run_until_complete(loop_fun(loop))
