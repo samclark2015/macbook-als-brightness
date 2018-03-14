@@ -6,8 +6,8 @@ import time
 import math
 
 ### Start Config
-poll_time=2
-poll_count=5
+poll_time=0.5 # Time between updates, in seconds
+poll_count=10 # Number of polls used to calculate average
 
 max_als=4095
 
