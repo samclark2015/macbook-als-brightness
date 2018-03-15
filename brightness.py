@@ -44,8 +44,11 @@ def set_screen(val):
     f.write(str(val))
 
 async def fade_screen(old, new, interval):
-    for i in range(old, new, 1 if old < new else -1):
-        set_screen(i)
+    val = get_screen()
+    while val != new: # range(old, new, 1 if old < new else -1):
+        val = get_screen()
+        val = val + (1 if val < new else -1)
+        set_screen(val)
         await asyncio.sleep(interval/abs(old-new))
 
 async def fade_keyb(old, new, interval):
